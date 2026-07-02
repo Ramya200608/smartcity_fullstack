@@ -1,0 +1,50 @@
+{
+  "model_version": "3.2",
+  "features": [
+    "water_pressure",
+    "water_flow",
+    "pipe_vibration",
+    "voltage_level",
+    "transformer_temp",
+    "current_draw",
+    "road_crack_pct",
+    "pothole_depth_cm",
+    "drain_flow",
+    "drain_blockage_pct",
+    "sewage_level_cm",
+    "zone_rainfall_mm"
+  ],
+  "problem_classes": [
+    "drain_blockage",
+    "drain_overflow",
+    "grid_fault",
+    "normal",
+    "pipe_burst",
+    "pothole_formation",
+    "power_fluctuation",
+    "road_damage",
+    "sewage_backup",
+    "transformer_overload",
+    "water_leak",
+    "water_outage"
+  ],
+  "severity_classes": [
+    "critical",
+    "moderate",
+    "normal",
+    "serious"
+  ],
+  "dept_classes": [
+    "drainage",
+    "electricity",
+    "municipality",
+    "none",
+    "water"
+  ],
+  "accuracy": {
+    "problem_type": 1.0,
+    "severity": 0.9755,
+    "department": 1.0
+  },
+  "n_training_samples": 7969
+}

@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "NEXUS Smart City",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/backend/app.py",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "NEXUS_DB": "${workspaceFolder}/data/nexus.db"
+      },
+      "console": "integratedTerminal"
+    }
+  ]
+}

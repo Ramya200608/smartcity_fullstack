@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Electricity Department — NEXUS</title>
+<link rel="stylesheet" href="/css/shared.css"/>
+<style>
+.dept-hero{background:linear-gradient(135deg,rgba(255,179,0,.12),rgba(255,179,0,.03));border-bottom:1px solid rgba(255,179,0,.2);padding:26px 32px}
+.dept-title{font-family:var(--fn-d);font-size:1.9rem;font-weight:800;color:var(--amber)}
+.kpi-row{display:flex;gap:28px;margin-top:18px;flex-wrap:wrap}
+.dk{text-align:center}.dk-v{font-family:var(--fn-d);font-size:1.7rem;font-weight:800;color:var(--amber)}.dk-l{font-size:.7rem;color:var(--t2);text-transform:uppercase;letter-spacing:.07em}
+.layout{max-width:1400px;margin:0 auto;padding:22px;display:grid;grid-template-columns:1fr 340px;gap:20px}
+.inc-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:var(--r);padding:15px 17px;margin-bottom:10px;cursor:pointer;transition:all .2s}
+.inc-card:hover{transform:translateY(-1px);box-shadow:var(--sh)}
+.ai-snippet{background:rgba(255,179,0,.05);border:1px solid rgba(255,179,0,.15);border-radius:8px;padding:8px 10px;font-size:.77rem;color:var(--t2);line-height:1.5;margin:8px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:17px;margin-bottom:14px}
+.panel-title{font-family:var(--fn-d);font-size:.93rem;font-weight:700;margin-bottom:13px}
+.wave-canvas{width:100%;height:72px;border-radius:8px;background:var(--bg2);overflow:hidden;position:relative}
+.tf-row{display:flex;align-items:center;gap:10px;padding:9px 10px;background:var(--bg2);border-radius:8px;margin-bottom:6px}
+.tf-bar{flex:1;height:6px;background:var(--border2);border-radius:3px;overflow:hidden}
+.tf-fill{height:100%;border-radius:3px;transition:width .8s}
+.grid-cell{position:absolute;border:1px solid;border-radius:5px;display:grid;place-items:center;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:all .2s}
+.grid-cell:hover{filter:brightness(1.3)}
+.cell-ok{border-color:rgba(0,255,135,.25);color:var(--green);background:rgba(0,255,135,.05)}
+.cell-warn{border-color:rgba(255,179,0,.4);color:var(--amber);background:rgba(255,179,0,.08);animation:wblink 1.5s infinite}
+.cell-fault{border-color:rgba(255,61,87,.5);color:var(--red);background:rgba(255,61,87,.1);animation:wblink .9s infinite}
+@keyframes wblink{0%,100%{opacity:1}50%{opacity:.5}}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="topnav">
+  <a href="/" class="nav-logo"><div class="nav-logo-icon">🌐</div>NEXUS<span>City</span></a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">⚡ Dashboard</a>
+    <a href="/pages/departments/water.html" class="nav-link">💧 Water</a>
+    <a href="/pages/departments/electricity.html" class="nav-link active">⚡ Electricity</a>
+    <a href="/pages/departments/municipality.html" class="nav-link">🏗 Municipality</a>
+    <a href="/pages/departments/drainage.html" class="nav-link">🌊 Drainage</a>
+  </div>
+  <div class="nav-spacer"></div>
+  <div class="nav-badge" style="border-color:rgba(255,179,0,.4);color:var(--amber);background:var(--amber-dim)">⚡ ELECTRICITY DEPT.</div>
+  <div class="nav-clock" id="clock"></div>
+</nav>
+
+<div class="dept-hero">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+    <div>
+      <div class="dept-title">⚡ Electricity Department Portal</div>
+      <div style="color:var(--t2);font-size:.86rem;margin-top:3px">Smart grid monitoring · Transformer health · AI fault prediction · IoT voltage sensors</div>
+      <div class="kpi-row">
+        <div class="dk"><div class="dk-v" id="dk-active">–</div><div class="dk-l">Active Issues</div></div>
+        <div class="dk"><div class="dk-v" id="dk-critical" style="color:var(--red)">–</div><div class="dk-l">Critical</div></div>
+        <div class="dk"><div class="dk-v" id="dk-affected">–</div><div class="dk-l">Households Affected</div></div>
+        <div class="dk"><div class="dk-v" id="dk-resolved" style="color:var(--green)">–</div><div class="dk-l">Resolved</div></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="API.simulate('z02','electricity').then(()=>H.toast('Grid anomaly injected','warn'))">💉 Inject Fault</button>
+      <button class="btn btn-amber btn-sm" onclick="H.toast('Emergency load-shedding protocol activated','warn')">🚨 Load Shed</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="sec-hd mb14">
+      <div><div class="sec-title">AI-Detected Electrical Incidents</div><div class="sec-sub">Grid faults, transformer overloads &amp; voltage anomalies — IoT-driven</div></div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-cyan btn-sm" id="f-all" onclick="setFilter('all',this)">All</button>
+        <button class="btn btn-ghost btn-sm" id="f-critical" onclick="setFilter('critical',this)">Critical</button>
+        <button class="btn btn-ghost btn-sm" id="f-serious" onclick="setFilter('serious',this)">Serious</button>
+      </div>
+    </div>
+    <div id="inc-list"><div style="text-align:center;padding:40px;color:var(--t3)">Loading...</div></div>
+  </div>
+
+  <div>
+    <!-- Voltage waveform -->
+    <div class="panel">
+      <div class="panel-title">📈 Live Voltage Waveform</div>
+      <div class="wave-canvas">
+        <svg id="wave-svg" width="100%" height="72" viewBox="0 0 400 72" preserveAspectRatio="none" style="display:block">
+          <line x1="0" y1="36" x2="400" y2="36" stroke="rgba(255,179,0,.15)" stroke-width="1" stroke-dasharray="4 4"/>
+          <path id="wave-path" fill="none" stroke="var(--amber)" stroke-width="1.5" opacity=".85"/>
+        </svg>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:8px;font-size:.72rem">
+        <span style="color:var(--t3)">Now: <span class="mono" id="v-now" style="color:var(--amber)">– V</span></span>
+        <span style="color:var(--t3)">Min: <span class="mono" id="v-min">–</span></span>
+        <span style="color:var(--t3)">Max: <span class="mono" id="v-max">–</span></span>
+        <span style="color:var(--t3)">Status: <span class="mono" id="v-st" style="color:var(--green)">STABLE</span></span>
+      </div>
+    </div>
+
+    <!-- Grid map -->
+    <div class="panel">
+      <div class="panel-title">🗺 Distribution Grid Status</div>
+      <div style="position:relative;height:170px;background:var(--bg2);border-radius:8px;overflow:hidden">
+        <div class="grid-cell cell-ok" id="gc-north" style="left:4%;top:8%;width:28%;height:34%">NORTH GRID</div>
+        <div class="grid-cell cell-ok" id="gc-central" style="left:36%;top:8%;width:28%;height:34%">CENTRAL</div>
+        <div class="grid-cell cell-ok" id="gc-east" style="left:68%;top:8%;width:28%;height:34%">EAST GRID</div>
+        <div class="grid-cell cell-ok" id="gc-south" style="left:4%;top:54%;width:44%;height:36%">SOUTH GRID</div>
+        <div class="grid-cell cell-ok" id="gc-west" style="left:52%;top:54%;width:44%;height:36%">WEST GRID</div>
+      </div>
+    </div>
+
+    <!-- Transformer health -->
+    <div class="panel">
+      <div class="panel-title">🔧 Transformer Health Monitor</div>
+      <div id="tf-list"></div>
+    </div>
+
+    <!-- AI predictions -->
+    <div class="panel" style="background:rgba(255,179,0,.04);border-color:rgba(255,179,0,.2)">
+      <div class="panel-title" style="color:var(--amber)">🤖 AI Grid Predictions</div>
+      <div id="ai-recs" style="font-size:.8rem;color:var(--t2);line-height:1.7"></div>
+    </div>
+  </div>
+</div>
+<div class="toast-stack" id="toast-stack"></div>
+<script src="/js/api.js"></script>
+<script>
+startClock();
+let filterMode='all', allInc=[], waveHistory=[];
+
+function setFilter(m,b){filterMode=m;document.querySelectorAll('[id^=f-]').forEach(x=>x.className='btn btn-ghost btn-sm');b.className='btn btn-cyan btn-sm';renderList();}
+
+async function refresh(){
+  try{
+    const data=await API.deptInc('electricity');
+    allInc=data.incidents||[];
+    const s=data.stats;
+    document.getElementById('dk-active').textContent=s.active;
+    document.getElementById('dk-critical').textContent=s.critical;
+    document.getElementById('dk-resolved').textContent=s.resolved;
+    document.getElementById('dk-affected').textContent=H.fmt(allInc.filter(i=>i.status!=='resolved').reduce((a,i)=>a+i.affected_residents,0));
+    renderList();
+    await updateSensors();
+  }catch(e){console.error(e);}
+}
+
+function renderList(){
+  const list=filterMode==='all'?allInc:allInc.filter(i=>i.severity===filterMode);
+  const el=document.getElementById('inc-list');
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:36px;color:var(--t3)">No incidents — grid stable</div>';return;}
+  el.innerHTML=list.map(inc=>`
+    <div class="inc-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px">
+        <div><div style="font-size:.9rem;font-weight:700;color:var(--t1)">${inc.title}</div><div style="font-size:.7rem;color:var(--t3);font-family:var(--fn-m)">${inc.id}</div></div>
+        <span class="chip chip-${inc.severity}">${inc.severity}</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:7px">
+        <span style="font-size:.73rem;color:var(--t2)">📍 ${inc.zone_name}</span>
+        <span class="chip chip-pending" style="color:${H.statusColor(inc.status)};border-color:${H.statusColor(inc.status)}40">${H.statusLabel(inc.status)}</span>
+        <span style="font-size:.7rem;color:var(--t3);font-family:var(--fn-m)">${H.timeAgo(inc.created_at)}</span>
+      </div>
+      <div class="ai-snippet">🤖 ${(inc.ai_analysis||'').substring(0,180)}...</div>
+      <div style="font-size:.7rem;color:var(--t3);margin-bottom:9px">👥 ${inc.affected_residents} households · ⏱ ${inc.estimated_eta} · 🎯 ${inc.ai_confidence?.toFixed(0)}% conf.</div>
+      <div style="display:flex;gap:6px">
+        ${inc.status==='resolved'?`<span class="btn btn-green btn-xs" style="pointer-events:none">✅ Resolved</span>`
+        :`<button class="btn btn-green btn-xs" onclick="API.resolve('${inc.id}').then(()=>{H.toast('Resolved','success');refresh()})">✅ Resolve</button>
+          <button class="btn btn-ghost btn-xs" onclick="API.assign('${inc.id}','Elec-Alpha').then(()=>{H.toast('Team dispatched','info');refresh()})">👷 Dispatch</button>`}
+      </div>
+    </div>`).join('');
+}
+
+async function updateSensors(){
+  try{
+    const s=await API.sensors('z02');
+    const v=s['voltage_level']?.value??230;
+    const temp=s['transformer_temp']?.value??55;
+    const curr=s['current_draw']?.value??50;
+    waveHistory.push(v);
+    if(waveHistory.length>50) waveHistory.shift();
+    document.getElementById('v-now').textContent=v.toFixed(1)+'V';
+    document.getElementById('v-min').textContent=Math.min(...waveHistory).toFixed(1)+'V';
+    document.getElementById('v-max').textContent=Math.max(...waveHistory).toFixed(1)+'V';
+    const ok=v>=215&&v<=245;
+    document.getElementById('v-st').textContent=ok?'STABLE':'FAULT';
+    document.getElementById('v-st').style.color=ok?'var(--green)':'var(--red)';
+    // draw waveform
+    const pts=waveHistory.map((val,i)=>{const x=i/49*400;const y=36-(val-215)/60*28;return `${i===0?'M':'L'}${x.toFixed(1)},${Math.max(4,Math.min(68,y)).toFixed(1)}`;}).join(' ');
+    document.getElementById('wave-path').setAttribute('d',pts);
+    // grid cells
+    const cells=[['gc-north',v],['gc-central',v+3],['gc-east',v-2],['gc-south',curr],['gc-west',temp]];
+    cells.forEach(([id,val])=>{
+      const el=document.getElementById(id);
+      if(!el) return;
+      el.className='grid-cell '+(val>85||val<200?'cell-fault':val>65||val<215?'cell-warn':'cell-ok');
+    });
+    // transformers
+    renderTransformers(temp,curr);
+  }catch(e){}
+}
+
+function renderTransformers(temp,curr){
+  const tfs=[
+    {name:'TF-North-01',zone:'z01',temp:temp+5},
+    {name:'TF-Central-02',zone:'z02',temp},
+    {name:'TF-East-03',zone:'z07',temp:temp-8},
+    {name:'TF-South-04',zone:'z06',temp:temp+12},
+  ];
+  document.getElementById('tf-list').innerHTML=tfs.map(tf=>{
+    const pct=Math.min(100,(tf.temp-20)/75*100);
+    const c=tf.temp>85?'var(--red)':tf.temp>65?'var(--amber)':'var(--green)';
+    return `<div class="tf-row">
+      <span style="font-size:1rem">🔧</span>
+      <div style="flex:1"><div style="font-size:.83rem;font-weight:600;color:var(--t1)">${tf.name}</div>
+      <div style="font-size:.7rem;color:var(--t3)">${tf.temp.toFixed(1)}°C</div>
+      <div class="tf-bar mt4"><div class="tf-fill" style="width:${pct.toFixed(0)}%;background:${c}"></div></div></div>
+      <span class="chip" style="background:${c}15;color:${c};border:1px solid ${c}30;font-size:.66rem">${tf.temp>85?'CRIT':tf.temp>65?'WARN':'OK'}</span>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('ai-recs').innerHTML=[
+  '• TF-Central-02 running at 74°C — ML failure probability 28% in next 72hrs. Schedule cooling inspection.',
+  '• Load balancing: Redistribute 180kW from Central to West grid sector to reduce transformer stress.',
+  '• AI detected micro-outage pattern in Chandkheda (3 occurrences in 48hrs). Likely loose feeder junction.',
+  '• Peak demand forecast tonight 18:30–20:00 IST. Pre-emptive load management request sent.',
+].join('<br><br>');
+
+refresh();
+setInterval(refresh,12000);
+document.getElementById('f-all').className='btn btn-cyan btn-sm';
+</script>
+</body>
+</html>

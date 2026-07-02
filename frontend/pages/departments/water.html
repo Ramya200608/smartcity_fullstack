@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Water Department — NEXUS</title>
+<link rel="stylesheet" href="/css/shared.css"/>
+<style>
+.dept-hero{background:linear-gradient(135deg,rgba(56,189,248,.12),rgba(56,189,248,.03));border-bottom:1px solid rgba(56,189,248,.2);padding:26px 32px}
+.dept-title{font-family:var(--fn-d);font-size:1.9rem;font-weight:800;color:#38bdf8}
+.kpi-row{display:flex;gap:28px;margin-top:18px;flex-wrap:wrap}
+.dk{text-align:center}.dk-v{font-family:var(--fn-d);font-size:1.7rem;font-weight:800;color:#38bdf8}.dk-l{font-size:.7rem;color:var(--t2);text-transform:uppercase;letter-spacing:.07em}
+.layout{max-width:1400px;margin:0 auto;padding:22px;display:grid;grid-template-columns:1fr 340px;gap:20px}
+.inc-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid #38bdf8;border-radius:var(--r);padding:15px 17px;margin-bottom:10px;cursor:pointer;transition:all .2s}
+.inc-card:hover{transform:translateY(-1px);box-shadow:var(--sh)}
+.ai-snippet{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.15);border-radius:8px;padding:8px 10px;font-size:.77rem;color:var(--t2);line-height:1.5;margin:8px 0}
+.sensor-pill{padding:3px 8px;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;font-size:.7rem;font-family:var(--fn-m)}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:17px;margin-bottom:14px}
+.panel-title{font-family:var(--fn-d);font-size:.93rem;font-weight:700;margin-bottom:13px}
+.gauge-wrap{display:flex;justify-content:space-around;align-items:center;padding:4px 0}
+.gauge{text-align:center}
+.gauge-ring{position:relative;width:88px;height:88px;margin:0 auto}
+.gauge-ring svg{transform:rotate(-90deg)}
+.gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge-num{font-family:var(--fn-m);font-size:1.1rem;font-weight:700}
+.gauge-unit{font-size:.6rem;color:var(--t3)}
+.gauge-label{font-size:.7rem;color:var(--t2);margin-top:6px}
+.zone-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:.8rem}
+.zone-row:last-child{border-bottom:none}
+.z-bar{flex:1;height:5px;background:var(--border2);border-radius:3px;overflow:hidden}
+.z-fill{height:100%;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="topnav">
+  <a href="/" class="nav-logo"><div class="nav-logo-icon">🌐</div>NEXUS<span>City</span></a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">⚡ Dashboard</a>
+    <a href="/pages/departments/water.html" class="nav-link active">💧 Water</a>
+    <a href="/pages/departments/electricity.html" class="nav-link">⚡ Electricity</a>
+    <a href="/pages/departments/municipality.html" class="nav-link">🏗 Municipality</a>
+    <a href="/pages/departments/drainage.html" class="nav-link">🌊 Drainage</a>
+  </div>
+  <div class="nav-spacer"></div>
+  <div class="nav-badge" style="border-color:rgba(56,189,248,.4);color:#38bdf8;background:var(--water-dim)">💧 WATER DEPT.</div>
+  <div class="nav-clock" id="clock"></div>
+</nav>
+
+<div class="dept-hero">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+    <div>
+      <div class="dept-title">💧 Water Department Portal</div>
+      <div style="color:var(--t2);font-size:.86rem;margin-top:3px">AI-monitored pipe network · IoT pressure &amp; flow sensors · Automated leak detection · GPS tracking</div>
+      <div class="kpi-row">
+        <div class="dk"><div class="dk-v" id="dk-active">–</div><div class="dk-l">Active Issues</div></div>
+        <div class="dk"><div class="dk-v" id="dk-critical" style="color:var(--red)">–</div><div class="dk-l">Critical</div></div>
+        <div class="dk"><div class="dk-v" id="dk-sensors">36</div><div class="dk-l">Sensors Online</div></div>
+        <div class="dk"><div class="dk-v" id="dk-resolved" style="color:var(--green)">–</div><div class="dk-l">Resolved Today</div></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="API.simulate('z01','water').then(()=>H.toast('Anomaly injected in z01','warn'))">💉 Inject Anomaly</button>
+      <button class="btn btn-sm" style="background:#38bdf8;color:#020d12" onclick="H.toast('All water teams alerted via SMS','success')">📢 Alert Teams</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <!-- LEFT: incident list -->
+  <div>
+    <div class="sec-hd mb14">
+      <div><div class="sec-title">AI-Detected Water Incidents</div><div class="sec-sub">Auto-generated from IoT sensor anomalies · No human reporting required</div></div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-cyan btn-sm" id="f-all" onclick="setFilter('all',this)">All</button>
+        <button class="btn btn-ghost btn-sm" id="f-critical" onclick="setFilter('critical',this)">Critical</button>
+        <button class="btn btn-ghost btn-sm" id="f-serious" onclick="setFilter('serious',this)">Serious</button>
+        <button class="btn btn-ghost btn-sm" id="f-moderate" onclick="setFilter('moderate',this)">Moderate</button>
+      </div>
+    </div>
+    <div id="inc-list"><div style="text-align:center;padding:40px;color:var(--t3)">Loading incidents...</div></div>
+  </div>
+
+  <!-- RIGHT: panels -->
+  <div>
+    <!-- Pipe pressure/flow gauges -->
+    <div class="panel">
+      <div class="panel-title">📊 Live Pressure &amp; Flow</div>
+      <div class="gauge-wrap">
+        <div class="gauge">
+          <div class="gauge-ring">
+            <svg width="88" height="88" viewBox="0 0 88 88">
+              <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(56,189,248,.15)" stroke-width="7"/>
+              <circle id="arc-pressure" cx="44" cy="44" r="36" fill="none" stroke="#38bdf8" stroke-width="7" stroke-dasharray="226" stroke-dashoffset="130" stroke-linecap="round"/>
+            </svg>
+            <div class="gauge-center"><div class="gauge-num" id="g-pressure" style="color:#38bdf8">–</div><div class="gauge-unit">PSI</div></div>
+          </div>
+          <div class="gauge-label">Avg Pressure</div>
+        </div>
+        <div class="gauge">
+          <div class="gauge-ring">
+            <svg width="88" height="88" viewBox="0 0 88 88">
+              <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(0,255,135,.15)" stroke-width="7"/>
+              <circle id="arc-flow" cx="44" cy="44" r="36" fill="none" stroke="var(--green)" stroke-width="7" stroke-dasharray="226" stroke-dashoffset="80" stroke-linecap="round"/>
+            </svg>
+            <div class="gauge-center"><div class="gauge-num" id="g-flow" style="color:var(--green)">–</div><div class="gauge-unit">L/min</div></div>
+          </div>
+          <div class="gauge-label">Avg Flow</div>
+        </div>
+        <div class="gauge">
+          <div class="gauge-ring">
+            <svg width="88" height="88" viewBox="0 0 88 88">
+              <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(157,78,221,.15)" stroke-width="7"/>
+              <circle id="arc-vib" cx="44" cy="44" r="36" fill="none" stroke="var(--purple)" stroke-width="7" stroke-dasharray="226" stroke-dashoffset="200" stroke-linecap="round"/>
+            </svg>
+            <div class="gauge-center"><div class="gauge-num" id="g-vib" style="color:var(--purple)">–</div><div class="gauge-unit">mm/s</div></div>
+          </div>
+          <div class="gauge-label">Pipe Vibration</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zone health -->
+    <div class="panel">
+      <div class="panel-title">📍 Zone Pressure Health</div>
+      <div id="zone-health"></div>
+    </div>
+
+    <!-- Pipe network SVG -->
+    <div class="panel" style="padding:14px">
+      <div class="panel-title">🔧 Pipe Network Status</div>
+      <div style="position:relative;height:160px;background:var(--bg2);border-radius:8px;overflow:hidden">
+        <svg width="100%" height="160" viewBox="0 0 320 160">
+          <defs><marker id="arr" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="rgba(56,189,248,.5)"/></marker></defs>
+          <!-- Main pipes -->
+          <rect x="10" y="73" width="300" height="14" rx="4" fill="rgba(56,189,248,.08)" stroke="rgba(56,189,248,.2)" stroke-width="1"/>
+          <rect x="78"  y="10" width="14" height="66" rx="4" fill="rgba(56,189,248,.08)" stroke="rgba(56,189,248,.2)" stroke-width="1"/>
+          <rect x="155" y="10" width="14" height="66" rx="4" fill="rgba(56,189,248,.08)" stroke="rgba(56,189,248,.2)" stroke-width="1"/>
+          <rect x="228" y="10" width="14" height="66" rx="4" fill="rgba(56,189,248,.08)" stroke="rgba(56,189,248,.2)" stroke-width="1"/>
+          <rect x="78"  y="87" width="14" height="63" rx="4" fill="rgba(56,189,248,.08)" stroke="rgba(56,189,248,.2)" stroke-width="1"/>
+          <rect x="228" y="87" width="14" height="63" rx="4" fill="rgba(56,189,248,.08)" stroke="rgba(56,189,248,.2)" stroke-width="1"/>
+          <!-- Animated flow -->
+          <rect x="10" y="76" width="300" height="8" rx="3" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="10 14" opacity=".6">
+            <animate attributeName="stroke-dashoffset" from="0" to="-24" dur=".9s" repeatCount="indefinite"/>
+          </rect>
+          <!-- Zone labels -->
+          <text x="85" y="9" fill="rgba(56,189,248,.5)" font-size="7" font-family="monospace">Z1</text>
+          <text x="162" y="9" fill="rgba(56,189,248,.5)" font-size="7" font-family="monospace">Z3</text>
+          <text x="235" y="9" fill="rgba(56,189,248,.5)" font-size="7" font-family="monospace">Z8</text>
+          <!-- Issue markers -->
+          <circle id="pipe-m1" cx="50" cy="80" r="0" fill="var(--red)" opacity=".9"><animate attributeName="r" values="3;6;3" dur="1.8s" repeatCount="indefinite"/></circle>
+        </svg>
+      </div>
+    </div>
+
+    <!-- AI Recommendations -->
+    <div class="panel" style="background:rgba(56,189,248,.04);border-color:rgba(56,189,248,.2)">
+      <div class="panel-title" style="color:#38bdf8">🤖 AI Recommendations</div>
+      <div id="ai-recs" style="font-size:.8rem;color:var(--t2);line-height:1.7"></div>
+    </div>
+  </div>
+</div>
+<div class="toast-stack" id="toast-stack"></div>
+<script src="/js/api.js"></script>
+<script>
+startClock();
+let filterMode = 'all';
+let allInc = [];
+
+function setFilter(mode, btn) {
+  filterMode = mode;
+  document.querySelectorAll('[id^=f-]').forEach(b => b.className = 'btn btn-ghost btn-sm');
+  btn.className = 'btn btn-cyan btn-sm';
+  renderList();
+}
+
+async function refresh() {
+  try {
+    const data = await API.deptInc('water');
+    allInc = data.incidents || [];
+    const s = data.stats;
+    document.getElementById('dk-active').textContent   = s.active;
+    document.getElementById('dk-critical').textContent = s.critical;
+    document.getElementById('dk-resolved').textContent = s.resolved;
+    renderList();
+    await updateSensors();
+  } catch(e) { console.error(e); }
+}
+
+function renderList() {
+  const list = filterMode === 'all' ? allInc : allInc.filter(i => i.severity === filterMode);
+  const el = document.getElementById('inc-list');
+  if (!list.length) { el.innerHTML = '<div style="text-align:center;padding:36px;color:var(--t3)">No incidents in this category</div>'; return; }
+  el.innerHTML = list.map(inc => `
+    <div class="inc-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px">
+        <div>
+          <div style="font-size:.9rem;font-weight:700;color:var(--t1)">${inc.title}</div>
+          <div style="font-size:.7rem;color:var(--t3);font-family:var(--fn-m)">${inc.id}</div>
+        </div>
+        <span class="chip chip-${inc.severity}">${inc.severity}</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:7px">
+        <span style="font-size:.73rem;color:var(--t2)">📍 ${inc.zone_name}</span>
+        <span class="chip chip-pending" style="color:${H.statusColor(inc.status)};border-color:${H.statusColor(inc.status)}40">${H.statusLabel(inc.status)}</span>
+        <span style="font-size:.7rem;color:var(--t3);font-family:var(--fn-m)">${H.timeAgo(inc.created_at)}</span>
+      </div>
+      <div class="ai-snippet">🤖 ${(inc.ai_analysis||'').substring(0,180)}...</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        ${(inc.sensor_readings||[]).map(r=>`<span class="sensor-pill" style="color:${r.status==='normal'?'var(--green)':r.status==='warning'?'var(--amber)':'var(--red)'}">${r.sensor?.replace(/_/g,' ')}: ${r.value} ${r.unit}</span>`).join('')}
+      </div>
+      <div style="font-size:.7rem;color:var(--t3);margin-bottom:9px">👥 ${inc.affected_residents} residents · ⏱ ${inc.estimated_eta} · 🎯 ${inc.ai_confidence?.toFixed(0)}% ML confidence</div>
+      <div style="display:flex;gap:6px">
+        ${inc.status==='resolved'
+          ? `<span class="btn btn-green btn-xs" style="pointer-events:none">✅ Resolved ${H.timeAgo(inc.resolved_at)}</span>`
+          : `<button class="btn btn-green btn-xs" onclick="doResolve('${inc.id}')">✅ Resolve</button>
+             <button class="btn btn-ghost btn-xs" onclick="doAssign('${inc.id}')">👷 Assign</button>
+             <button class="btn btn-ghost btn-xs" onclick="API.progress('${inc.id}').then(()=>{H.toast('Status updated','info');refresh()})">🔧 Progress</button>`
+        }
+      </div>
+    </div>`).join('');
+}
+
+async function doResolve(id) {
+  await API.resolve(id);
+  H.toast('Incident '+id+' resolved','success');
+  refresh();
+}
+async function doAssign(id) {
+  const teams = ['Water-Alpha-1','Water-Beta-2','Water-Gamma-3'];
+  const t = teams[Math.floor(Math.random()*teams.length)];
+  await API.assign(id, t);
+  H.toast('Assigned '+t,'info');
+  refresh();
+}
+
+async function updateSensors() {
+  try {
+    const sensors = await API.sensors('z01');
+    const p = sensors['water_pressure']?.value ?? 60;
+    const f = sensors['water_flow']?.value ?? 140;
+    const v = sensors['pipe_vibration']?.value ?? 0.8;
+    document.getElementById('g-pressure').textContent = p.toFixed(1);
+    document.getElementById('g-flow').textContent     = f.toFixed(1);
+    document.getElementById('g-vib').textContent      = v.toFixed(2);
+    // arcs: 226 = full circle
+    document.getElementById('arc-pressure').setAttribute('stroke-dashoffset',(226*(1-Math.min(1,p/100))).toFixed(1));
+    document.getElementById('arc-flow').setAttribute('stroke-dashoffset',(226*(1-Math.min(1,f/250))).toFixed(1));
+    document.getElementById('arc-vib').setAttribute('stroke-dashoffset',(226*(1-Math.min(1,v/10))).toFixed(1));
+    // Anomaly marker
+    if(p < 30) { document.getElementById('pipe-m1').setAttribute('r','5'); }
+  } catch(e){}
+}
+
+function renderZoneHealth() {
+  const zones = [
+    {n:'Gandhi Nagar',p:Math.round(35+Math.random()*50)},
+    {n:'Chandkheda',p:Math.round(40+Math.random()*45)},
+    {n:'Navrangpura',p:Math.round(50+Math.random()*40)},
+    {n:'Satellite',p:Math.round(30+Math.random()*55)},
+    {n:'Maninagar',p:Math.round(20+Math.random()*60)},
+  ];
+  document.getElementById('zone-health').innerHTML = zones.map(z=>{
+    const c = z.p > 70 ? 'var(--green)' : z.p > 45 ? 'var(--amber)' : 'var(--red)';
+    return `<div class="zone-row"><span style="min-width:110px;color:var(--t2)">${z.n}</span>
+      <div class="z-bar"><div class="z-fill" style="width:${z.p}%;background:${c}"></div></div>
+      <span style="min-width:44px;text-align:right;font-family:var(--fn-m);font-size:.75rem;color:${c}">${z.p} PSI</span></div>`;
+  }).join('');
+}
+
+document.getElementById('ai-recs').innerHTML = [
+  '• Pipe segment Gandhi Nagar (installed 1989) shows pressure decay pattern. Schedule replacement within 3 months.',
+  '• Sensor correlation: 3 leaks detected near Navrangpura bus depot. Root cause: road construction vibration.',
+  '• Water loss estimate: ~280 L/hr from all active leaks. Deploying virtual repair prioritisation...',
+  '• ML model: Chandkheda junction risk factor elevated (82%) — pre-emptive valve inspection advised.',
+].join('<br><br>');
+
+refresh();
+renderZoneHealth();
+setInterval(refresh, 12000);
+setInterval(renderZoneHealth, 20000);
+document.getElementById('f-all').className = 'btn btn-cyan btn-sm';
+</script>
+</body>
+</html>

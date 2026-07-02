@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Municipality Department — NEXUS</title>
+<link rel="stylesheet" href="/css/shared.css"/>
+<style>
+.dept-hero{background:linear-gradient(135deg,rgba(0,255,135,.1),rgba(0,255,135,.03));border-bottom:1px solid rgba(0,255,135,.2);padding:26px 32px}
+.dept-title{font-family:var(--fn-d);font-size:1.9rem;font-weight:800;color:var(--green)}
+.kpi-row{display:flex;gap:28px;margin-top:18px;flex-wrap:wrap}
+.dk{text-align:center}.dk-v{font-family:var(--fn-d);font-size:1.7rem;font-weight:800;color:var(--green)}.dk-l{font-size:.7rem;color:var(--t2);text-transform:uppercase;letter-spacing:.07em}
+.layout{max-width:1400px;margin:0 auto;padding:22px;display:grid;grid-template-columns:1fr 340px;gap:20px}
+.inc-card{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:var(--r);padding:15px 17px;margin-bottom:10px;transition:all .2s}
+.inc-card:hover{transform:translateY(-1px);box-shadow:var(--sh)}
+.ai-snippet{background:rgba(0,255,135,.05);border:1px solid rgba(0,255,135,.12);border-radius:8px;padding:8px 10px;font-size:.77rem;color:var(--t2);line-height:1.5;margin:8px 0}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:17px;margin-bottom:14px}
+.panel-title{font-family:var(--fn-d);font-size:.93rem;font-weight:700;margin-bottom:13px}
+.road-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:.8rem}
+.road-row:last-child{border-bottom:none}
+.rd-bar{flex:1;height:6px;background:var(--border2);border-radius:3px;overflow:hidden}
+.rd-fill{height:100%;border-radius:3px}
+.wo-card{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:11px;margin-bottom:7px}
+.wo-prog{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:.7rem;color:var(--t3)}
+</style>
+</head>
+<body>
+<div class="shell">
+<nav class="topnav">
+  <a href="/" class="nav-logo"><div class="nav-logo-icon">🌐</div>NEXUS<span>City</span></a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">⚡ Dashboard</a>
+    <a href="/pages/departments/water.html" class="nav-link">💧 Water</a>
+    <a href="/pages/departments/electricity.html" class="nav-link">⚡ Electricity</a>
+    <a href="/pages/departments/municipality.html" class="nav-link active">🏗 Municipality</a>
+    <a href="/pages/departments/drainage.html" class="nav-link">🌊 Drainage</a>
+  </div>
+  <div class="nav-spacer"></div>
+  <div class="nav-badge" style="border-color:rgba(0,255,135,.3);color:var(--green);background:var(--green-dim)">🏗 MUNICIPALITY</div>
+  <div class="nav-clock" id="clock"></div>
+</nav>
+
+<div class="dept-hero">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:14px">
+    <div>
+      <div class="dept-title">🏗 Municipality Department Portal</div>
+      <div style="color:var(--t2);font-size:.86rem;margin-top:3px">Road surface sensors · Pothole detection · Structural monitoring · AI maintenance scheduling</div>
+      <div class="kpi-row">
+        <div class="dk"><div class="dk-v" id="dk-active">–</div><div class="dk-l">Active Issues</div></div>
+        <div class="dk"><div class="dk-v" id="dk-critical" style="color:var(--red)">–</div><div class="dk-l">Critical Roads</div></div>
+        <div class="dk"><div class="dk-v">247</div><div class="dk-l">Km Monitored</div></div>
+        <div class="dk"><div class="dk-v" id="dk-resolved" style="color:var(--green)">–</div><div class="dk-l">Resolved</div></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-ghost btn-sm" onclick="API.simulate('z07','municipality').then(()=>H.toast('Road anomaly injected','warn'))">💉 Inject Anomaly</button>
+      <button class="btn btn-green btn-sm" onclick="H.toast('Work orders generated for all crews','success')">📋 Work Orders</button>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <div>
+    <div class="sec-hd mb14">
+      <div><div class="sec-title">AI-Detected Road &amp; Infrastructure Issues</div><div class="sec-sub">Crack sensors, pothole depth monitors, structural IoT devices</div></div>
+      <div style="display:flex;gap:5px">
+        <button class="btn btn-cyan btn-sm" id="f-all" onclick="setFilter('all',this)">All</button>
+        <button class="btn btn-ghost btn-sm" id="f-critical" onclick="setFilter('critical',this)">Critical</button>
+        <button class="btn btn-ghost btn-sm" id="f-serious" onclick="setFilter('serious',this)">Serious</button>
+      </div>
+    </div>
+    <div id="inc-list"><div style="text-align:center;padding:40px;color:var(--t3)">Loading...</div></div>
+  </div>
+
+  <div>
+    <!-- Road map SVG -->
+    <div class="panel" style="padding:14px">
+      <div class="panel-title">🗺 Road Condition Map</div>
+      <div style="position:relative;height:180px;background:var(--bg2);border-radius:8px;overflow:hidden">
+        <svg width="100%" height="180" viewBox="0 0 320 180">
+          <!-- Road network -->
+          <rect x="8" y="82" width="305" height="16" rx="4" fill="#33445560" stroke="#33445590" stroke-width="1"/>
+          <rect x="8" y="32" width="305" height="10" rx="4" fill="#33445550"/>
+          <rect x="8" y="138" width="305" height="10" rx="4" fill="#33445550"/>
+          <rect x="76" y="8" width="10" height="165" rx="4" fill="#33445550"/>
+          <rect x="156" y="8" width="10" height="165" rx="4" fill="#33445550"/>
+          <rect x="236" y="8" width="10" height="165" rx="4" fill="#33445550"/>
+          <!-- Damage markers -->
+          <circle cx="48" cy="90" r="5" fill="var(--red)" opacity=".9"><animate attributeName="r" values="3;7;3" dur="1.8s" repeatCount="indefinite"/></circle>
+          <circle cx="198" cy="37" r="4" fill="var(--amber)" opacity=".8"/>
+          <circle cx="270" cy="143" r="5" fill="var(--red)" opacity=".9"><animate attributeName="r" values="3;7;3" dur="2.2s" repeatCount="indefinite"/></circle>
+          <circle cx="81" cy="60" r="3" fill="var(--cyan)" opacity=".7"/>
+          <!-- Labels -->
+          <text x="12" y="9" fill="#8fa3bf" font-size="7" font-family="monospace">Gandhi Nagar</text>
+          <text x="165" y="9" fill="#8fa3bf" font-size="7" font-family="monospace">Navrangpura</text>
+        </svg>
+        <div style="position:absolute;bottom:7px;left:10px;display:flex;gap:10px;font-size:.66rem">
+          <span style="display:flex;align-items:center;gap:4px;color:var(--t2)"><span style="width:7px;height:7px;border-radius:50%;background:var(--red);display:inline-block"></span>Critical</span>
+          <span style="display:flex;align-items:center;gap:4px;color:var(--t2)"><span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block"></span>Damaged</span>
+          <span style="display:flex;align-items:center;gap:4px;color:var(--t2)"><span style="width:7px;height:7px;border-radius:50%;background:var(--cyan);display:inline-block"></span>Monitor</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Road health index -->
+    <div class="panel">
+      <div class="panel-title">🛣 Road Health Index</div>
+      <div id="road-health"></div>
+    </div>
+
+    <!-- Work orders -->
+    <div class="panel">
+      <div class="panel-title">📋 Active Work Orders</div>
+      <div id="work-orders"></div>
+    </div>
+
+    <!-- AI maintenance -->
+    <div class="panel" style="background:rgba(0,255,135,.04);border-color:rgba(0,255,135,.18)">
+      <div class="panel-title" style="color:var(--green)">🤖 AI Maintenance Schedule</div>
+      <div id="ai-recs" style="font-size:.8rem;color:var(--t2);line-height:1.7"></div>
+    </div>
+  </div>
+</div>
+<div class="toast-stack" id="toast-stack"></div>
+<script src="/js/api.js"></script>
+<script>
+startClock();
+let filterMode='all',allInc=[];
+
+function setFilter(m,b){filterMode=m;document.querySelectorAll('[id^=f-]').forEach(x=>x.className='btn btn-ghost btn-sm');b.className='btn btn-cyan btn-sm';renderList();}
+
+async function refresh(){
+  try{
+    const data=await API.deptInc('municipality');
+    allInc=data.incidents||[];
+    const s=data.stats;
+    document.getElementById('dk-active').textContent=s.active;
+    document.getElementById('dk-critical').textContent=s.critical;
+    document.getElementById('dk-resolved').textContent=s.resolved;
+    renderList();
+  }catch(e){console.error(e);}
+}
+
+function renderList(){
+  const list=filterMode==='all'?allInc:allInc.filter(i=>i.severity===filterMode);
+  const el=document.getElementById('inc-list');
+  if(!list.length){el.innerHTML='<div style="text-align:center;padding:36px;color:var(--t3)">No road issues detected — infrastructure healthy ✅</div>';return;}
+  el.innerHTML=list.map(inc=>`
+    <div class="inc-card">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px">
+        <div><div style="font-size:.9rem;font-weight:700;color:var(--t1)">${inc.title}</div><div style="font-size:.7rem;color:var(--t3);font-family:var(--fn-m)">${inc.id}</div></div>
+        <span class="chip chip-${inc.severity}">${inc.severity}</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:7px">
+        <span style="font-size:.73rem;color:var(--t2)">📍 ${inc.zone_name}</span>
+        <span class="chip chip-pending" style="color:${H.statusColor(inc.status)};border-color:${H.statusColor(inc.status)}40">${H.statusLabel(inc.status)}</span>
+        <span style="font-size:.7rem;color:var(--t3);font-family:var(--fn-m)">${H.timeAgo(inc.created_at)}</span>
+      </div>
+      <div class="ai-snippet">🤖 ${inc.ai_analysis||''}</div>
+      <div style="font-size:.7rem;color:var(--t3);margin-bottom:9px">👥 ${inc.affected_residents} residents · ⏱ ${inc.estimated_eta} · 🎯 ${inc.ai_confidence?.toFixed(0)}% conf.</div>
+      <div style="display:flex;gap:6px">
+        ${inc.status==='resolved'?`<span class="btn btn-green btn-xs" style="pointer-events:none">✅ Resolved</span>`
+        :`<button class="btn btn-green btn-xs" onclick="API.resolve('${inc.id}').then(()=>{H.toast('Resolved','success');refresh()})">✅ Resolve</button>
+          <button class="btn btn-ghost btn-xs" onclick="API.assign('${inc.id}','Muni-Team-1').then(()=>{H.toast('Crew dispatched','info');refresh()})">👷 Assign Crew</button>`}
+      </div>
+    </div>`).join('');
+}
+
+function renderRoadHealth(){
+  const roads=[
+    {n:'MG Road',pct:82},{n:'Nehru Bridge',pct:44},{n:'SG Highway',pct:91},
+    {n:'Gandhi Nagar Main',pct:33},{n:'Satellite Road',pct:68},{n:'Vatva-Naroda',pct:27},
+  ];
+  document.getElementById('road-health').innerHTML=roads.map(r=>{
+    const c=r.pct>75?'var(--green)':r.pct>50?'var(--amber)':'var(--red)';
+    return `<div class="road-row"><span style="min-width:130px;color:var(--t2)">${r.n}</span>
+      <div class="rd-bar"><div class="rd-fill" style="width:${r.pct}%;background:${c}"></div></div>
+      <span style="min-width:36px;text-align:right;font-family:var(--fn-m);font-size:.74rem;color:${c}">${r.pct}%</span></div>`;
+  }).join('');
+}
+
+function renderWorkOrders(){
+  const orders=[
+    {t:'Pothole patch — Gandhi Nagar Main',team:'Crew-A',pct:65,c:'var(--amber)'},
+    {t:'Road resurfacing — Maninagar',team:'Crew-B',pct:30,c:'var(--cyan)'},
+    {t:'Sidewalk repair — Navrangpura',team:'Crew-C',pct:90,c:'var(--green)'},
+    {t:'Bridge inspection — Nehru',team:'Crew-D',pct:15,c:'var(--red)'},
+  ];
+  document.getElementById('work-orders').innerHTML=orders.map(o=>`
+    <div class="wo-card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:.83rem;font-weight:600;color:var(--t1)">${o.t}</div>
+        <span style="font-size:.7rem;color:var(--t3)">${o.team}</span>
+      </div>
+      <div class="wo-prog">
+        <div style="flex:1;height:4px;background:var(--border2);border-radius:2px;overflow:hidden"><div style="height:100%;width:${o.pct}%;background:${o.c};border-radius:2px"></div></div>
+        <span style="font-family:var(--fn-m);font-weight:700;color:${o.c};min-width:32px;text-align:right">${o.pct}%</span>
+      </div>
+    </div>`).join('');
+}
+
+document.getElementById('ai-recs').innerHTML=[
+  '• Gandhi Nagar Zone 4B will reach critical degradation in ~18 days. Schedule emergency patching.',
+  '• Sensor correlation: 3 pothole clusters near Navrangpura align with underground pipe pressure events. Coordinate with Water Dept.',
+  '• Monsoon prep: 14 road segments flagged for pre-season inspection. Estimated cost: ₹18.4L.',
+  '• AI-optimised maintenance route: Chandkheda→Gota→Navrangpura saves 2.3 crew-hours daily.',
+].join('<br><br>');
+
+refresh();
+renderRoadHealth();
+renderWorkOrders();
+setInterval(refresh,12000);
+document.getElementById('f-all').className='btn btn-cyan btn-sm';
+</script>
+</body>
+</html>
